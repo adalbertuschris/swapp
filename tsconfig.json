@@ -26,6 +26,9 @@
     "paths": {
       "@api-clients": [
         "./src/app/api-clients"
+      ],
+      "@g11n": [
+        "./src/app/g11n"
       ]
     }
   },
