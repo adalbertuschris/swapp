@@ -28,6 +28,9 @@
         "./src/environments"
       ],
       "@api": [
+        "./src/app/api"
+      ],
+      "@api/*": [
         "./src/app/api/*"
       ],
       "@api-clients": [

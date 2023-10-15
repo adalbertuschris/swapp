@@ -7,7 +7,7 @@ import { DetailApiResult } from '../models/detail-api-result';
 import { environment } from '@env';
 
 @Injectable()
-export class BaseApiService {
+export abstract class BaseApiService {
   protected readonly baseUrl = environment.apiUrl;
   protected readonly httpClient: HttpClient = inject(HttpClient);
 
@@ -19,7 +19,7 @@ export class BaseApiService {
     const mappedResponse = mapResponseToCamelCase<T, DetailApiResult<Omit<R, 'id'>>>(model);
 
     return (
-      mappedResponse.result &&
+      mappedResponse?.result &&
       ({
         id: mappedResponse.result.uid,
         ...mappedResponse.result.properties
@@ -35,9 +35,9 @@ export class BaseApiService {
     const mappedResponse = mapResponseToCamelCase<T, CollectionApiResult>(model);
 
     return {
-      totalItems: mappedResponse.totalRecords,
-      totalPages: mappedResponse.totalPages,
-      items: mappedResponse.results
+      totalItems: mappedResponse?.totalRecords || 0,
+      totalPages: mappedResponse?.totalPages || 0,
+      items: mappedResponse?.results || []
     } as R;
   }
 }
