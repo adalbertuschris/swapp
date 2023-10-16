@@ -33,9 +33,6 @@
       "@api/*": [
         "./src/app/api/*"
       ],
-      "@api-clients": [
-        "./src/app/api-clients"
-      ],
       "@common": [
         "./src/app/common"
       ],

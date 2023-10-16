@@ -5,7 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { ApiClientsModule } from '@api-clients';
+import { ApiModule } from '@api';
 import { G11nModule } from '@g11n';
 import { HomePageComponent } from './ui/main/pages/home-page/home-page.component';
 import { LayoutComponent } from './ui/main/components/layout/layout.component';
@@ -16,7 +16,7 @@ import { LayoutComponent } from './ui/main/components/layout/layout.component';
     BrowserModule,
     AppRoutingModule,
     BrowserAnimationsModule,
-    ApiClientsModule,
+    ApiModule,
     G11nModule,
     MatButtonModule,
     MatToolbarModule
