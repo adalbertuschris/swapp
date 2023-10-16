@@ -1,6 +1,2 @@
-<sw-cards-layout [title]="'CARDS.STARSHIPS' | translate" [isLoading]="isLoading$ | async" (draw)="draw()">
-    <div class="card-container">
-        <sw-card-player [name]="'PLAYERS.PLAYER_1' | translate" [player]="player1$ | async"></sw-card-player>
-        <sw-card-player [name]="'PLAYERS.COMPUTER' | translate" [player]="player2$ | async"></sw-card-player>
-    </div>
-</sw-cards-layout>
+<sw-two-players-cards-layout [title]="'CARDS.STARSHIPS' | translate">
+</sw-two-players-cards-layout>
