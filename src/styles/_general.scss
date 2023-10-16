@@ -1,0 +1,14 @@
+@use 'variables.scss' as var;
+
+html,
+body {
+  height: 100%;
+  background: var.$dark-gray;
+  color: var.$white;
+}
+
+body {
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  max-width: 1300px;
+  margin: 0 auto;
+}

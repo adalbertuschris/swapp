@@ -1,0 +1,15 @@
+{
+  "CARDS.PEOPLE": "People",
+  "CARDS.PEOPLE.EYE_COLOR": "Eye color",
+  "CARDS.PEOPLE.GENDER": "Gender",
+  "CARDS.PEOPLE.MASS": "Mass",
+
+  "GENERAL.PLAY": "Play",
+  "GENERAL.SCORE": "Score",
+  "GENERAL.WIN": "Win",
+
+  "HOME.WELCOME": "Welcome",
+
+  "PLAYERS.PLAYER_1": "Player 1",
+  "PLAYERS.COMPUTER": "Computer"
+}
