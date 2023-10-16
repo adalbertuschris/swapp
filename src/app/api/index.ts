@@ -4,3 +4,6 @@ export * from './base/models/collection-result';
 
 // services
 export * from './base/services/resource-api.service';
+
+// modules
+export * from './api.module';
