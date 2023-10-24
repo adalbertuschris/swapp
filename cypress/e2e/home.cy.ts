@@ -9,7 +9,9 @@ describe('Home page', () => {
 
   it('navigate to homepage when user click title on toolbar', () => {
     cy.get('[data-test=toolbar]').get('[data-test=title]').click();
-    cy.url().should('eq', 'http://localhost:4200/');
+    cy.location().should((location) => {
+      expect(location.pathname).to.eq('/');
+    });
   });
 
   it('navigate to people game', () => {
