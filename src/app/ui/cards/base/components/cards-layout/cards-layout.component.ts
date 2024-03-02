@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { TranslateModule } from '@ngx-translate/core';
 
@@ -8,7 +8,8 @@ import { TranslateModule } from '@ngx-translate/core';
   standalone: true,
   imports: [CommonModule, MatButtonModule, TranslateModule],
   templateUrl: './cards-layout.component.html',
-  styleUrls: ['./cards-layout.component.scss']
+  styleUrls: ['./cards-layout.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CardsLayoutComponent {
   @Input() title: string;

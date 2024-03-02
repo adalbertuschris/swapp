@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TranslateModule } from '@ngx-translate/core';
@@ -10,7 +10,8 @@ import { CardComponent } from '../card/card.component';
   standalone: true,
   imports: [CommonModule, TranslateModule, MatProgressSpinnerModule, CardComponent],
   templateUrl: './card-player.component.html',
-  styleUrls: ['./card-player.component.scss']
+  styleUrls: ['./card-player.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CardPlayerComponent {
   @Input() name: string;
