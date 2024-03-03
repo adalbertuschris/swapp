@@ -6,4 +6,3 @@ dist
 angular.json
 tsconfig.json
 *.html 
-.circleci/*
