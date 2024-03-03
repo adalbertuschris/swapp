@@ -48,7 +48,7 @@ jobs:
             - *cache_key
       - run:
           name: Run unit tests
-          command: npm run test
+          command: npm run test -- --no-watch --no-progress
   e2e:
     executor: cypress/default
     steps:
