@@ -52,10 +52,10 @@ jobs:
   e2e:
     executor: cypress/default
     steps:
-      - cypress/install
+      - cypress/install:
+          install-browsers: true
       - cypress/run-tests:
           cypress-command: npx cypress run --browser chrome
-          install-browsers: true
           start-command: npm run start
   build-dev:
     <<: *run_in_node
@@ -104,4 +104,3 @@ workflows:
           filters:
             branches:
               only: main
-#test
