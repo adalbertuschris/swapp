@@ -24,17 +24,16 @@ jobs:
           key: *cache_key
           paths:
             - node_modules
-
-lint:
-  <<: *run_in_node
-  steps:
-    - checkout
-    - restore_cache:
-        keys:
-          - *cache_key
-    - run:
-        name: Run Lint
-        command: npm run lint
+  lint:
+    <<: *run_in_node
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - *cache_key
+      - run:
+          name: Run Lint
+          command: npm run lint
 
 workflows:
   version: 2.1
