@@ -8,6 +8,10 @@ var_3: &run_in_browser
   docker:
     - image: cimg/node:20.11.1-browsers
 
+orbs:
+  browser-tools: circleci/browser-tools@1.4.4
+  cypress: cypress-io/cypress@3
+
 jobs:
   install:
     <<: *run_in_node
@@ -35,11 +39,72 @@ jobs:
           name: Run Lint
           command: npm run lint
 
+  unit-tests:
+    <<: *run_in_browser
+    steps:
+      - checkout
+      - browser-tools/install-chrome
+      - restore_cache:
+          keys:
+            - *cache_key
+
+      - run:
+          name: Run unit tests
+          command: npm run test
+
+  e2e:
+    - cypress/run:
+        cypress-command: npx cypress run --browser chrome
+        install-browsers: true
+        start-command: npm run start
+
+  build-dev:
+    <<: *run_in_node
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - *cache_key
+      - run:
+          name: Build dev
+          command: npm run build:dev
+
+  build-prod:
+    <<: *run_in_node
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - *cache_key
+      - run:
+          name: Build prod
+          command: npm run build:prod
+
 workflows:
   version: 2.1
-  build:
+  test-build:
     jobs:
       - install
       - lint:
           requires:
             - install
+      - unit-tests:
+          requires:
+            - install
+      - e2e:
+          requires:
+            - install
+
+      - build-dev:
+          requires:
+            - install
+          filters:
+            branches:
+              ignore: main
+
+      - build-prod:
+          requires:
+            - install
+          filters:
+            branches:
+              only: main
