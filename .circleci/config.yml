@@ -46,15 +46,15 @@ jobs:
       - restore_cache:
           keys:
             - *cache_key
-
       - run:
           name: Run unit tests
           command: npm run test
   e2e:
-    - cypress/run:
-        cypress-command: npx cypress run --browser chrome
-        install-browsers: true
-        start-command: npm run start
+    steps:
+      - cypress/run:
+          cypress-command: npx cypress run --browser chrome
+          install-browsers: true
+          start-command: npm run start
   build-dev:
     <<: *run_in_node
     steps:
