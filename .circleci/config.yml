@@ -1,21 +1,82 @@
 version: 2.1
 
-var_1: &cache_key npm-cache-{{ checksum "package.json" }}
-var_2: &run_in_node
-  docker:
-    - image: cimg/node:20.11.1
-var_3: &run_in_browser
-  docker:
-    - image: cimg/node:20.11.1-browsers
+# Variables
+
+cache_key: &cache_key npm-cache-{{ checksum "package-lock.json" }}
+
+# Configs
+
+lint_config: &lint_config
+  requires:
+    - install
+
+tests_config: &tests_config
+  requires:
+    - install
+    - lint
+
+build_config: &build_config
+  requires:
+    - install
+    - lint
+
+deploy_config: &deploy_config
+  requires:
+    - unit-tests
+    - e2e
+    - build
+
+feature_config: &feature_config
+  environment: 'local'
+  filters:
+    branches:
+      ignore:
+        - develop
+        - main
+
+dev_config: &dev_config
+  environment: 'dev'
+  filters:
+    branches:
+      only: develop
+
+prod_config: &prod_config
+  environment: 'prod'
+  filters:
+    branches:
+      only: main
+
+# Executors
+
+executors:
+  node_executor:
+    parameters:
+      version:
+        type: string
+        default: '20.11.1'
+    docker:
+      - image: cimg/node:<< parameters.version >>
+    resource_class: medium
+  node_browsers_executor:
+    parameters:
+      version:
+        type: string
+        default: '20.11.1'
+    docker:
+      - image: cimg/node:<< parameters.version >>-browsers
+    resource_class: medium
+
+# Orbs
 
 orbs:
-  browser-tools: circleci/browser-tools@1.4.4
+  browser_tools: circleci/browser-tools@1.4.4
   cypress: cypress-io/cypress@3
+
+# Jobs
 
 jobs:
   install:
-    <<: *run_in_node
-    resource_class: medium
+    executor: node_executor
     steps:
       - checkout
       - restore_cache:
@@ -29,7 +90,7 @@ jobs:
           paths:
             - node_modules
   lint:
-    <<: *run_in_node
+    executor: node_executor
     steps:
       - checkout
       - restore_cache:
@@ -39,10 +100,10 @@ jobs:
           name: Run Lint
           command: npm run lint
   unit-tests:
-    <<: *run_in_browser
+    executor: node_browsers_executor
     steps:
       - checkout
-      - browser-tools/install-chrome
+      - browser_tools/install-chrome
       - restore_cache:
           keys:
             - *cache_key
@@ -52,14 +113,14 @@ jobs:
   e2e:
     executor: cypress/default
     steps:
-      - browser-tools/install-chrome
+      - browser_tools/install-chrome
       - cypress/install:
           install-browsers: false
       - cypress/run-tests:
           cypress-command: npx cypress run --browser chrome
           start-command: npm run start
-  build-dev:
-    <<: *run_in_node
+  build:
+    executor: node_executor
     steps:
       - checkout
       - restore_cache:
@@ -69,7 +130,7 @@ jobs:
           name: Build dev
           command: npm run build:dev
   build-prod:
-    <<: *run_in_node
+    executor: node_executor
     steps:
       - checkout
       - restore_cache:
@@ -79,29 +140,42 @@ jobs:
           name: Build prod
           command: npm run build:prod
 
+# Workflows
+
 workflows:
-  version: 2.1
-  test-build:
+  feature:
     jobs:
-      - install
+      - install:
+          <<: *feature_config
       - lint:
-          requires:
-            - install
+          <<: [*feature_config, *lint_config]
       - unit-tests:
-          requires:
-            - install
+          <<: [*feature_config, *tests_config]
       - e2e:
-          requires:
-            - install
-      - build-dev:
-          requires:
-            - install
-          filters:
-            branches:
-              ignore: main
-      - build-prod:
-          requires:
-            - install
-          filters:
-            branches:
-              only: main
+          <<: [*feature_config, *tests_config]
+      - build:
+          <<: [*feature_config, *build_config]
+  dev:
+    jobs:
+      - install:
+          <<: *dev_config
+      - lint:
+          <<: [*dev_config, *lint_config]
+      - unit-tests:
+          <<: [*dev_config, *tests_config]
+      - e2e:
+          <<: [*dev_config, *tests_config]
+      - build:
+          <<: [*dev_config, *build_config]
+  prod:
+    jobs:
+      - install:
+          <<: *prod_config
+      - lint:
+          <<: [*prod_config, *lint_config]
+      - unit-tests:
+          <<: [*prod_config, *tests_config]
+      - e2e:
+          <<: [*prod_config, *tests_config]
+      - build:
+          <<: [*prod_config, *build_config]
