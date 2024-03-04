@@ -12,12 +12,10 @@ lint_config: &lint_config
 
 tests_config: &tests_config
   requires:
-    - install
     - lint
 
 build_config: &build_config
   requires:
-    - install
     - lint
 
 deploy_config: &deploy_config
