@@ -27,7 +27,6 @@ deploy_config: &deploy_config
     - build
 
 feature_config: &feature_config
-  environment: 'local'
   filters:
     branches:
       ignore:
@@ -35,13 +34,11 @@ feature_config: &feature_config
         - main
 
 dev_config: &dev_config
-  environment: 'dev'
   filters:
     branches:
       only: develop
 
 prod_config: &prod_config
-  environment: 'prod'
   filters:
     branches:
       only: main
