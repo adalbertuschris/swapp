@@ -15,6 +15,9 @@ parameters:
   cypress_cache_path:
     type: string
     default: '~/.cache/Cypress'
+  working_directory:
+    type: string
+    default: '~/project'
   dist_path:
     type: string
     default: 'dist'
@@ -158,34 +161,45 @@ commands:
       - run:
           name: Build << parameters.env >>
           command: npm run build:<< parameters.env >> -- --output-path=<< pipeline.parameters.dist_path >>
+      - persist_to_workspace:
+          root: ./
+          paths:
+            - ./<< pipeline.parameters.dist_path >>
       - store_artifacts:
           path: ./<< pipeline.parameters.dist_path >>
           destination: /<< pipeline.parameters.dist_path >>
   deploy_cmd:
     steps:
+      - attach_workspace:
+          at: ./
       - run:
           name: Deploy to AWS
           command: |
             aws s3 rm s3://$S3_BUCKET --recursive
-            aws s3 cp << pipeline.parameters.dist_path >> s3://$S3_BUCKET --recursive
+            aws s3 cp ./<< pipeline.parameters.dist_path >> s3://$S3_BUCKET --recursive
+            aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
 
 # Jobs
 
 jobs:
   install:
     executor: node_executor
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - install_cmd
   lint:
     executor: node_executor
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - lint_cmd
   unit-tests:
     executor: node_browsers_executor
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - unit_tests_cmd
   e2e:
     executor: node_browsers_executor
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - e2e_cmd
   build:
@@ -194,11 +208,13 @@ jobs:
         type: string
         default: 'dev'
     executor: node_executor
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - build_cmd:
           env: << parameters.env >>
   deploy:
     executor: aws_cli
+    working_directory: << pipeline.parameters.working_directory >>
     steps:
       - deploy_cmd
 
