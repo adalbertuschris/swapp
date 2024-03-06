@@ -1,8 +1,14 @@
 version: 2.1
 
-# Variables
+# Pipeline parameters
 
-cache_key: &cache_key npm-cache-{{ checksum "package-lock.json" }}
+parameters:
+  cache_key:
+    type: string
+    default: 'npm-cache-{{ checksum "package-lock.json" }}'
+  dist_path:
+    type: string
+    default: 'dist'
 
 # Configs
 
@@ -69,7 +75,6 @@ executors:
 
 orbs:
   browser_tools: circleci/browser-tools@1.4.4
-  cypress: cypress-io/cypress@3
 
 # Commands
 
@@ -78,21 +83,19 @@ commands:
     steps:
       - checkout
       - restore_cache:
-          keys:
-            - *cache_key
+          key: << pipeline.parameters.cache_key >>
       - run:
           name: Install packages
           command: npm install
       - save_cache:
-          key: *cache_key
+          key: << pipeline.parameters.cache_key >>
           paths:
             - node_modules
   lint_cmd:
     steps:
       - checkout
       - restore_cache:
-          keys:
-            - *cache_key
+          key: << pipeline.parameters.cache_key >>
       - run:
           name: Run Lint
           command: npm run lint
@@ -101,19 +104,27 @@ commands:
       - checkout
       - browser_tools/install-chrome
       - restore_cache:
-          keys:
-            - *cache_key
+          key: << pipeline.parameters.cache_key >>
       - run:
           name: Run unit tests
           command: npm run test -- --no-watch --no-progress
   e2e_cmd:
     steps:
+      - checkout
       - browser_tools/install-chrome
-      - cypress/install:
-          install-browsers: false
-      - cypress/run-tests:
-          cypress-command: npx cypress run --browser chrome
-          start-command: npm run start
+      - restore_cache:
+          key: << pipeline.parameters.cache_key >>
+      - run:
+          name: Start server
+          command: npm run start
+          background: true
+      - run:
+          name: Run Cypress
+          command: npx cypress run --browser chrome
+      - store_artifacts:
+          path: /cypress/videos
+      - store_artifacts:
+          path: /cypress/screenshots
   build_cmd:
     parameters:
       env:
@@ -122,21 +133,20 @@ commands:
     steps:
       - checkout
       - restore_cache:
-          keys:
-            - *cache_key
+          key: << pipeline.parameters.cache_key >>
       - run:
           name: Build << parameters.env >>
-          command: npm run build:<< parameters.env >>
+          command: npm run build:<< parameters.env >> -- --output-path=<< pipeline.parameters.dist_path >>
       - store_artifacts:
-          path: ./dist
-          destination: /dist
+          path: ./<< pipeline.parameters.dist_path >>
+          destination: /<< pipeline.parameters.dist_path >>
   deploy_cmd:
     steps:
       - run:
           name: Deploy to AWS
           command: |
             aws s3 rm s3://$S3_BUCKET --recursive
-            aws s3 cp dist s3://$S3_BUCKET --recursive
+            aws s3 cp << pipeline.parameters.dist_path >> s3://$S3_BUCKET --recursive
 
 # Jobs
 
@@ -154,18 +164,18 @@ jobs:
     steps:
       - unit_tests_cmd
   e2e:
-    executor: cypress/default
+    executor: node_browsers_executor
     steps:
       - e2e_cmd
   build:
-    executor: node_executor
-    steps:
-      - build_cmd
-  build_prod:
+    parameters:
+      env:
+        type: string
+        default: 'dev'
     executor: node_executor
     steps:
       - build_cmd:
-          env: 'prod'
+          env: << parameters.env >>
   deploy:
     executor: aws_cli
     steps:
@@ -208,5 +218,18 @@ workflows:
           <<: [*prod_config, *tests_config]
       - e2e:
           <<: [*prod_config, *tests_config]
-      - build_prod:
+      - build:
           <<: [*prod_config, *build_config]
+          name: 'build-prod'
+          env: 'prod'
+      - hold:
+          <<: *prod_config
+          type: approval
+          requires:
+            - unit-tests
+            - e2e
+            - build-prod
+      - deploy:
+          <<: *prod_config
+          requires:
+            - hold
