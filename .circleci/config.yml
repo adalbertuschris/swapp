@@ -128,7 +128,8 @@ commands:
           name: Build << parameters.env >>
           command: npm run build:<< parameters.env >>
       - store_artifacts:
-          path: /dist
+          path: ./dist
+          destination: /dist
   deploy_cmd:
     steps:
       - run:
