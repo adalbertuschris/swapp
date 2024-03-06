@@ -5,13 +5,13 @@ version: 2.1
 parameters:
   cache_key:
     type: string
-    default: 'npm-cache-{{ checksum "package-lock.json" }}'
+    default: 'npm-cache-0-{{ checksum "package-lock.json" }}'
   deps_cache_path:
     type: string
     default: 'node_modules'
   cypress_cache_key:
     type: string
-    default: 'cypress-cache-{{ arch }}-{{ checksum "package-lock.json" }}'
+    default: 'cypress-cache-0-{{ arch }}-{{ checksum "package-lock.json" }}'
   cypress_cache_path:
     type: string
     default: '~/.cache/Cypress'
