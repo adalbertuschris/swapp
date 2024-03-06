@@ -1,0 +1,256 @@
+version: 2.1
+
+# Pipeline parameters
+
+parameters:
+  cache_key:
+    type: string
+    default: 'npm-cache-v0-{{ checksum "package-lock.json" }}'
+  deps_cache_path:
+    type: string
+    default: 'node_modules'
+  cypress_cache_key:
+    type: string
+    default: 'cypress-cache-v0-{{ arch }}-{{ checksum "package-lock.json" }}'
+  cypress_cache_path:
+    type: string
+    default: '~/.cache/Cypress'
+  dist_path:
+    type: string
+    default: 'dist'
+
+# Configs
+
+lint_config: &lint_config
+  requires:
+    - install
+
+tests_config: &tests_config
+  requires:
+    - lint
+
+build_config: &build_config
+  requires:
+    - lint
+
+deploy_config: &deploy_config
+  requires:
+    - unit-tests
+    - e2e
+    - build
+
+feature_config: &feature_config
+  filters:
+    branches:
+      ignore:
+        - develop
+        - main
+
+dev_config: &dev_config
+  filters:
+    branches:
+      only: develop
+
+prod_config: &prod_config
+  filters:
+    branches:
+      only: main
+
+# Executors
+
+executors:
+  node_executor:
+    parameters:
+      version:
+        type: string
+        default: '20.11.1'
+    docker:
+      - image: cimg/node:<< parameters.version >>
+    resource_class: medium
+  node_browsers_executor:
+    parameters:
+      version:
+        type: string
+        default: '20.11.1'
+    docker:
+      - image: cimg/node:<< parameters.version >>-browsers
+    resource_class: medium
+  aws_cli:
+    docker:
+      - image: cimg/aws:2024.03
+    resource_class: medium
+
+# Orbs
+
+orbs:
+  browser_tools: circleci/browser-tools@1.4.4
+
+# Commands
+
+commands:
+  install_cmd:
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restore Cypress cache
+          key: << pipeline.parameters.cypress_cache_key >>
+      - restore_cache:
+          name: Restore npm cache
+          key: << pipeline.parameters.cache_key >>
+      - run:
+          name: Install packages
+          command: npm install
+      - save_cache:
+          key: << pipeline.parameters.cypress_cache_key >>
+          paths:
+            - << pipeline.parameters.cypress_cache_path >>
+      - save_cache:
+          key: << pipeline.parameters.cache_key >>
+          paths:
+            - << pipeline.parameters.deps_cache_path >>
+  lint_cmd:
+    steps:
+      - checkout
+      - restore_cache:
+          key: << pipeline.parameters.cache_key >>
+      - run:
+          name: Run Lint
+          command: npm run lint
+  unit_tests_cmd:
+    steps:
+      - checkout
+      - browser_tools/install-chrome
+      - restore_cache:
+          key: << pipeline.parameters.cache_key >>
+      - run:
+          name: Run unit tests
+          command: npm run test -- --no-watch --no-progress
+  e2e_cmd:
+    steps:
+      - checkout
+      - browser_tools/install-chrome
+      - restore_cache:
+          name: Restore Cypress cache
+          key: << pipeline.parameters.cypress_cache_key >>
+      - restore_cache:
+          name: Restore npm cache
+          key: << pipeline.parameters.cache_key >>
+      - run:
+          name: Start server
+          command: npm run start
+          background: true
+      - run:
+          name: Run Cypress
+          command: npx cypress run --browser chrome
+      - store_artifacts:
+          path: /cypress/videos
+      - store_artifacts:
+          path: /cypress/screenshots
+  build_cmd:
+    parameters:
+      env:
+        type: string
+        default: 'dev'
+    steps:
+      - checkout
+      - restore_cache:
+          key: << pipeline.parameters.cache_key >>
+      - run:
+          name: Build << parameters.env >>
+          command: npm run build:<< parameters.env >> -- --output-path=<< pipeline.parameters.dist_path >>
+      - store_artifacts:
+          path: ./<< pipeline.parameters.dist_path >>
+          destination: /<< pipeline.parameters.dist_path >>
+  deploy_cmd:
+    steps:
+      - run:
+          name: Deploy to AWS
+          command: |
+            aws s3 rm s3://$S3_BUCKET --recursive
+            aws s3 cp << pipeline.parameters.dist_path >> s3://$S3_BUCKET --recursive
+
+# Jobs
+
+jobs:
+  install:
+    executor: node_executor
+    steps:
+      - install_cmd
+  lint:
+    executor: node_executor
+    steps:
+      - lint_cmd
+  unit-tests:
+    executor: node_browsers_executor
+    steps:
+      - unit_tests_cmd
+  e2e:
+    executor: node_browsers_executor
+    steps:
+      - e2e_cmd
+  build:
+    parameters:
+      env:
+        type: string
+        default: 'dev'
+    executor: node_executor
+    steps:
+      - build_cmd:
+          env: << parameters.env >>
+  deploy:
+    executor: aws_cli
+    steps:
+      - deploy_cmd
+
+# Workflows
+
+workflows:
+  feature:
+    jobs:
+      - install:
+          <<: *feature_config
+      - lint:
+          <<: [*feature_config, *lint_config]
+      - unit-tests:
+          <<: [*feature_config, *tests_config]
+      - e2e:
+          <<: [*feature_config, *tests_config]
+      - build:
+          <<: [*feature_config, *build_config]
+  dev:
+    jobs:
+      - install:
+          <<: *dev_config
+      - lint:
+          <<: [*dev_config, *lint_config]
+      - unit-tests:
+          <<: [*dev_config, *tests_config]
+      - e2e:
+          <<: [*dev_config, *tests_config]
+      - build:
+          <<: [*dev_config, *build_config]
+  prod:
+    jobs:
+      - install:
+          <<: *prod_config
+      - lint:
+          <<: [*prod_config, *lint_config]
+      - unit-tests:
+          <<: [*prod_config, *tests_config]
+      - e2e:
+          <<: [*prod_config, *tests_config]
+      - build:
+          <<: [*prod_config, *build_config]
+          name: 'build-prod'
+          env: 'prod'
+      - hold:
+          <<: *prod_config
+          type: approval
+          requires:
+            - unit-tests
+            - e2e
+            - build-prod
+      - deploy:
+          <<: *prod_config
+          requires:
+            - hold
