@@ -162,21 +162,17 @@ commands:
       - run:
           name: Build << parameters.env >>
           command: npm run build:<< parameters.env >> -- --output-path=<< pipeline.parameters.dist_path >>
+      - persist_to_workspace:
+          root: ./
+          paths:
+            - ./<< pipeline.parameters.dist_path >>
       - store_artifacts:
           path: ./<< pipeline.parameters.dist_path >>
           destination: /<< pipeline.parameters.dist_path >>
-  download_artifacts_cmd:
-    steps:
-      - run:
-          name: Download artifacts
-          environment: CIRCLE_TOKEN=':your_token'
-          command: |
-            curl -s -H "Circle-Token: $CIRCLE_TOKEN" https://circleci.com/api/v1.1/project/:vcs-type/:username/:project/:build_num/artifacts \
-            | grep -o -E 'https://([^"]*)' \
-            | wget --verbose --header "Circle-Token: $CIRCLE_TOKEN" --input-file -
   deploy_cmd:
     steps:
-      - download_artifacts_cmd
+      - attach_workspace:
+          at: ./<< pipeline.parameters.dist_path >>
       - run:
           name: Directory
           command: ls
@@ -230,6 +226,7 @@ jobs:
 workflows:
   feature:
     jobs:
+      - test
       - install:
           <<: *feature_config
       - lint:
