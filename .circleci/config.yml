@@ -94,7 +94,6 @@ commands:
       - restore_cache:
           keys:
             - << pipeline.parameters.cache_key >>
-            - << pipeline.parameters.cypress_cache_key >>
       - run:
           name: Install packages
           command: npm install
@@ -102,10 +101,6 @@ commands:
           key: << pipeline.parameters.cache_key >>
           paths:
             - << pipeline.parameters.deps_cache_path >>
-      - save_cache:
-          key: << pipeline.parameters.cypress_cache_key >>
-          paths:
-            - << pipeline.parameters.cypress_cache_path >>
   lint_cmd:
     steps:
       - checkout
@@ -131,6 +126,13 @@ commands:
           keys:
             - << pipeline.parameters.cache_key >>
             - << pipeline.parameters.cypress_cache_key >>
+      - run:
+          name: Install packages
+          command: npm install
+      - save_cache:
+          key: << pipeline.parameters.cypress_cache_key >>
+          paths:
+            - << pipeline.parameters.cypress_cache_path >>
       - run:
           name: Start server
           command: npm run start
