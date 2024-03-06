@@ -6,6 +6,15 @@ parameters:
   cache_key:
     type: string
     default: 'npm-cache-{{ checksum "package-lock.json" }}'
+  deps_cache_path:
+    type: string
+    default: 'node_modules'
+  cypress_cache_key:
+    type: string
+    default: 'cypress-cache-{{ arch }}-{{ checksum "package-lock.json" }}'
+  cypress_cache_path:
+    type: string
+    default: '~/.cache/Cypress'
   dist_path:
     type: string
     default: 'dist'
@@ -83,14 +92,20 @@ commands:
     steps:
       - checkout
       - restore_cache:
-          key: << pipeline.parameters.cache_key >>
+          keys:
+            - << pipeline.parameters.cache_key >>
+            - << pipeline.parameters.cypress_cache_key >>
       - run:
           name: Install packages
           command: npm install
       - save_cache:
           key: << pipeline.parameters.cache_key >>
           paths:
-            - node_modules
+            - << pipeline.parameters.deps_cache_path >>
+      - save_cache:
+          key: << pipeline.parameters.cypress_cache_key >>
+          paths:
+            - << pipeline.parameters.cypress_cache_path >>
   lint_cmd:
     steps:
       - checkout
@@ -113,7 +128,9 @@ commands:
       - checkout
       - browser_tools/install-chrome
       - restore_cache:
-          key: << pipeline.parameters.cache_key >>
+          keys:
+            - << pipeline.parameters.cache_key >>
+            - << pipeline.parameters.cypress_cache_key >>
       - run:
           name: Start server
           command: npm run start
