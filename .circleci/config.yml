@@ -5,13 +5,13 @@ version: 2.1
 parameters:
   cache_key:
     type: string
-    default: 'npm-cache-0-{{ checksum "package-lock.json" }}'
+    default: 'npm-cache-1-{{ checksum "package-lock.json" }}'
   deps_cache_path:
     type: string
     default: 'node_modules'
   cypress_cache_key:
     type: string
-    default: 'cypress-cache-0-{{ arch }}-{{ checksum "package-lock.json" }}'
+    default: 'cypress-cache-1-{{ arch }}-{{ checksum "package-lock.json" }}'
   cypress_cache_path:
     type: string
     default: '~/.cache/Cypress'
@@ -97,6 +97,10 @@ commands:
           name: Install packages
           command: npm install
       - save_cache:
+          key: << pipeline.parameters.cypress_cache_key >>
+          paths:
+            - << pipeline.parameters.cypress_cache_path >>
+      - save_cache:
           key: << pipeline.parameters.cache_key >>
           paths:
             - << pipeline.parameters.deps_cache_path >>
@@ -127,13 +131,6 @@ commands:
       - restore_cache:
           name: Restore npm cache
           key: << pipeline.parameters.cache_key >>
-      - run:
-          name: Install packages
-          command: npm install
-      - save_cache:
-          key: << pipeline.parameters.cypress_cache_key >>
-          paths:
-            - << pipeline.parameters.cypress_cache_path >>
       - run:
           name: Start server
           command: npm run start
