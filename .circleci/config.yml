@@ -172,7 +172,7 @@ commands:
   deploy_cmd:
     steps:
       - attach_workspace:
-          at: ./<< pipeline.parameters.dist_path >>
+          at: ./
       - run:
           name: Directory
           command: ls
