@@ -48,7 +48,6 @@ feature_config: &feature_config
       ignore:
         - develop
         - main
-        - ci-config
 
 dev_config: &dev_config
   filters:
@@ -58,7 +57,7 @@ dev_config: &dev_config
 prod_config: &prod_config
   filters:
     branches:
-      only: ci-config
+      only: main
 
 # Executors
 
@@ -181,6 +180,7 @@ commands:
           command: |
             aws s3 rm s3://$S3_BUCKET --recursive
             aws s3 cp ./<< pipeline.parameters.dist_path >> s3://$S3_BUCKET --recursive
+            aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
 
 # Jobs
 
