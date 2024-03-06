@@ -48,6 +48,7 @@ feature_config: &feature_config
       ignore:
         - develop
         - main
+        - ci-config
 
 dev_config: &dev_config
   filters:
@@ -57,7 +58,7 @@ dev_config: &dev_config
 prod_config: &prod_config
   filters:
     branches:
-      only: main
+      only: ci-config
 
 # Executors
 
@@ -167,10 +168,13 @@ commands:
   deploy_cmd:
     steps:
       - run:
+          name: Directory
+          command: ls
+      - run:
           name: Deploy to AWS
           command: |
             aws s3 rm s3://$S3_BUCKET --recursive
-            aws s3 cp << pipeline.parameters.working_directory >>/<< pipeline.parameters.dist_path >> s3://$S3_BUCKET --recursive
+            aws s3 cp ./<< pipeline.parameters.dist_path >> s3://$S3_BUCKET --recursive
 
 # Jobs
 
