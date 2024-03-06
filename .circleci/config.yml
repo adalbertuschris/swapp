@@ -173,9 +173,6 @@ commands:
       - attach_workspace:
           at: ./
       - run:
-          name: Directory
-          command: ls
-      - run:
           name: Deploy to AWS
           command: |
             aws s3 rm s3://$S3_BUCKET --recursive
