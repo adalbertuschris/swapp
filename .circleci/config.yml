@@ -60,6 +60,10 @@ executors:
     docker:
       - image: cimg/node:<< parameters.version >>-browsers
     resource_class: medium
+  aws_cli:
+    docker:
+      - image: cimg/aws:2024.03
+    resource_class: medium
 
 # Orbs
 
@@ -115,6 +119,10 @@ jobs:
           cypress-command: npx cypress run --browser chrome
           start-command: npm run start
   build:
+    parameters:
+      env:
+        type: string
+        default: 'dev'
     executor: node_executor
     steps:
       - checkout
@@ -122,18 +130,18 @@ jobs:
           keys:
             - *cache_key
       - run:
-          name: Build dev
-          command: npm run build:dev
-  build-prod:
-    executor: node_executor
+          name: Build
+          command: npm run build:<< parameters.env >>
+      - store_artifacts:
+          path: '**/dist/**'
+  deploy:
+    executor: aws_cli
     steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - *cache_key
       - run:
-          name: Build prod
-          command: npm run build:prod
+          name: Deploy to AWS
+          command: |
+            aws s3 rm s3://$S3_BUCKET --recursive
+            aws s3 cp dist s3://$S3_BUCKET --recursive
 
 # Workflows
 
@@ -173,4 +181,5 @@ workflows:
       - e2e:
           <<: [*prod_config, *tests_config]
       - build:
+          env: 'prod'
           <<: [*prod_config, *build_config]
