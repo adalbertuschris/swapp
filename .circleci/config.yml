@@ -92,8 +92,7 @@ commands:
     steps:
       - checkout
       - restore_cache:
-          keys:
-            - << pipeline.parameters.cache_key >>
+          key: << pipeline.parameters.cache_key >>
       - run:
           name: Install packages
           command: npm install
@@ -123,9 +122,11 @@ commands:
       - checkout
       - browser_tools/install-chrome
       - restore_cache:
-          keys:
-            - << pipeline.parameters.cache_key >>
-            - << pipeline.parameters.cypress_cache_key >>
+          name: Restore Cypress cache
+          key: << pipeline.parameters.cypress_cache_key >>
+      - restore_cache:
+          name: Restore npm cache
+          key: << pipeline.parameters.cache_key >>
       - run:
           name: Install packages
           command: npm install
