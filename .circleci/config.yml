@@ -71,11 +71,10 @@ orbs:
   browser_tools: circleci/browser-tools@1.4.4
   cypress: cypress-io/cypress@3
 
-# Jobs
+# Commands
 
-jobs:
-  install:
-    executor: node_executor
+commands:
+  install_cmd:
     steps:
       - checkout
       - restore_cache:
@@ -88,8 +87,7 @@ jobs:
           key: *cache_key
           paths:
             - node_modules
-  lint:
-    executor: node_executor
+  lint_cmd:
     steps:
       - checkout
       - restore_cache:
@@ -98,8 +96,7 @@ jobs:
       - run:
           name: Run Lint
           command: npm run lint
-  unit-tests:
-    executor: node_browsers_executor
+  unit_tests_cmd:
     steps:
       - checkout
       - browser_tools/install-chrome
@@ -109,8 +106,7 @@ jobs:
       - run:
           name: Run unit tests
           command: npm run test -- --no-watch --no-progress
-  e2e:
-    executor: cypress/default
+  e2e_cmd:
     steps:
       - browser_tools/install-chrome
       - cypress/install:
@@ -118,30 +114,61 @@ jobs:
       - cypress/run-tests:
           cypress-command: npx cypress run --browser chrome
           start-command: npm run start
-  build:
+  build_cmd:
     parameters:
       env:
         type: string
         default: 'dev'
-    executor: node_executor
     steps:
       - checkout
       - restore_cache:
           keys:
             - *cache_key
       - run:
-          name: Build
+          name: Build << parameters.env >>
           command: npm run build:<< parameters.env >>
       - store_artifacts:
-          path: '**/dist/**'
-  deploy:
-    executor: aws_cli
+          path: /dist
+  deploy_cmd:
     steps:
       - run:
           name: Deploy to AWS
           command: |
             aws s3 rm s3://$S3_BUCKET --recursive
             aws s3 cp dist s3://$S3_BUCKET --recursive
+
+# Jobs
+
+jobs:
+  install:
+    executor: node_executor
+    steps:
+      - install_cmd
+  lint:
+    executor: node_executor
+    steps:
+      - lint_cmd
+  unit-tests:
+    executor: node_browsers_executor
+    steps:
+      - unit_tests_cmd
+  e2e:
+    executor: cypress/default
+    steps:
+      - e2e_cmd
+  build:
+    executor: node_executor
+    steps:
+      - build_cmd
+  build_prod:
+    executor: node_executor
+    steps:
+      - build_cmd:
+          env: 'prod'
+  deploy:
+    executor: aws_cli
+    steps:
+      - deploy_cmd
 
 # Workflows
 
@@ -180,6 +207,5 @@ workflows:
           <<: [*prod_config, *tests_config]
       - e2e:
           <<: [*prod_config, *tests_config]
-      - build:
-          env: 'prod'
+      - build_prod:
           <<: [*prod_config, *build_config]
