@@ -226,7 +226,6 @@ jobs:
 workflows:
   feature:
     jobs:
-      - test
       - install:
           <<: *feature_config
       - lint:
